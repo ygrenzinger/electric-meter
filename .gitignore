@@ -1,0 +1,6 @@
+# Python direction
+.venv/
+__pycache__/
+
+# environment variables
+.env
