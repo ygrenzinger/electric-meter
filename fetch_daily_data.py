@@ -21,7 +21,7 @@ end = (
     datetime.strptime(start, '%Y-%m-%d') + timedelta(days=1)
 ).strftime("%Y-%m-%d")
 
-if start == datetime.today().strftime("%Y-%m-%d"):
+if start == (datetime.today() + timedelta(days=-1)).strftime("%Y-%m-%d"):
     print("Previous day already retrieved. Nothing to do.")
     exit()
 
