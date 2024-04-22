@@ -45,11 +45,20 @@ def fetch_data():
     ).strftime("%Y-%m-%d")
 
     if grouped_by_day:
-        consumption_query = f"SELECT strftime('%Y-%m-%d 00:00:00', datetime) AS datetime, SUM(value) / 2 AS value FROM consumption WHERE datetime BETWEEN '{
-            startDateIncluded}' AND '{endDateExcluded}' GROUP BY strftime('%Y-%m-%d', datetime) ORDER BY datetime"
+        consumption_query = f"""
+            SELECT strftime('%Y-%m-%d 00:00:00', datetime) AS datetime, SUM(value) / 2 AS value
+            FROM consumption
+            WHERE datetime
+            BETWEEN '{startDateIncluded}' AND '{endDateExcluded}'
+            GROUP BY strftime('%Y-%m-%d', datetime)
+            ORDER BY datetime
+        """
     else:
-        consumption_query = f"SELECT datetime, value FROM consumption WHERE datetime BETWEEN '{
-            startDateIncluded}' AND '{endDateExcluded}'"
+        consumption_query = f"""
+            SELECT datetime, value
+            FROM consumption
+            WHERE datetime BETWEEN '{startDateIncluded}' AND '{endDateExcluded}'
+        """
     res_consumption = cur.execute(consumption_query)
     consumption_data = res_consumption.fetchall()
     times = [
@@ -58,11 +67,20 @@ def fetch_data():
     consumption = [value for (_, value) in consumption_data]
 
     if grouped_by_day:
-        production_query = f"SELECT strftime('%Y-%m-%d 00:00:00', datetime) AS datetime, SUM(value) / 2 AS value FROM production WHERE datetime BETWEEN '{
-            startDateIncluded}' AND '{endDateExcluded}' GROUP BY strftime('%Y-%m-%d', datetime) ORDER BY datetime"
+        production_query = f"""
+            SELECT strftime('%Y-%m-%d 00:00:00', datetime) AS datetime, SUM(value) / 2 AS value
+            FROM production
+            WHERE datetime
+            BETWEEN '{startDateIncluded}' AND '{endDateExcluded}'
+            GROUP BY strftime('%Y-%m-%d', datetime)
+            ORDER BY datetime
+        """
     else:
-        production_query = f"SELECT datetime, value FROM production WHERE datetime BETWEEN '{
-            startDateIncluded}' AND '{endDateExcluded}'"
+        production_query = f"""
+            SELECT datetime, value
+            FROM production
+            WHERE datetime BETWEEN '{startDateIncluded}' AND '{endDateExcluded}'
+        """
     res_production = cur.execute(production_query)
     production_data = res_production.fetchall()
     production = [value for (_, value) in production_data]
@@ -127,11 +145,7 @@ select.add_tools(range_tool)
 
 curdoc().add_root(
     column(
-        row(
-            date_range_picker,
-            column(children=[toggle_grouped_by_day],
-                   sizing_mode="scale_height")
-        ),
+        row(date_range_picker, toggle_grouped_by_day),
         p,
         select
     )
