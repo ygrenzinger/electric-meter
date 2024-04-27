@@ -57,5 +57,10 @@ def retrieve_and_insert_data(type):
     con.commit()
 
 
+print("retrieving production data")
 retrieve_and_insert_data('production')
+
+print("retrieving consumption data")
 retrieve_and_insert_data('consumption')
+
+print("Data retrieved")
