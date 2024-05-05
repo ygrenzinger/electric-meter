@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+print("Script started at", datetime.now())
+
 con = sqlite3.connect("electric-measures.db")
 cur = con.cursor()
 
