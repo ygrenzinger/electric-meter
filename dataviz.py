@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from bokeh.models import DateRangePicker, Toggle, RangeTool
 from bokeh.layouts import column, row
-from bokeh.models import ColumnDataSource, HoverTool
+from bokeh.models import ColumnDataSource
 from bokeh.plotting import figure, curdoc
 import sqlite3
 
@@ -16,17 +16,18 @@ res = cur.execute(
     "SELECT datetime FROM production ORDER BY datetime DESC LIMIT 1"
 )
 max_range = res.fetchone()[0].split(' ')[0]
+res = cur.execute(
+    "SELECT datetime FROM production ORDER BY datetime ASC LIMIT 1"
+)
+min_range = res.fetchone()[0].split(' ')[0]
 max_date = datetime.strptime(max_range, '%Y-%m-%d')
+min_date = max_date + timedelta(days=-30)
 
 
 def build_date_range_picker():
-    res = cur.execute(
-        "SELECT datetime FROM production ORDER BY datetime ASC LIMIT 1"
-    )
-    min_range = res.fetchone()[0].split(' ')[0]
     return DateRangePicker(
         title="Select date range",
-        value=(min_range, max_range),
+        value=(min_date.strftime("%Y-%m-%d"), max_range),
         min_date=min_range,
         max_date=max_range,
         width=300,
@@ -37,11 +38,10 @@ date_range_picker = build_date_range_picker()
 toggle_grouped_by_day = Toggle(label="by day", flow_mode="block")
 
 
-def fetch_data():
-    startDateIncluded, endDateIncluded = date_range_picker.value
+def fetch_data(startDateIncluded, endDateIncluded):
     grouped_by_day = toggle_grouped_by_day.active
     endDateExcluded = (
-        datetime.strptime(endDateIncluded, '%Y-%m-%d') + timedelta(days=1)
+        endDateIncluded + timedelta(days=1)
     ).strftime("%Y-%m-%d")
 
     if grouped_by_day:
@@ -95,14 +95,14 @@ def fetch_data():
     }
 
 
-def update_plot(attr, old, new):
-    data = fetch_data()
+def build_title(data):
+    return f'total production {sum(data["production"]) / 1000}, consumption {sum(data["consumption"]) / 1000}, gain {sum(data["gain"]) / 1000} (in kWs) during the period'
+
+
+def update_plot(startDateIncluded, endDateIncluded):
+    data = fetch_data(startDateIncluded, endDateIncluded)
     src = ColumnDataSource(data=data)
     source.data.update(src.data)
-
-
-date_range_picker.on_change("value", update_plot)
-toggle_grouped_by_day.on_change("active", update_plot)
 
 
 p = figure(
@@ -110,12 +110,13 @@ p = figure(
     toolbar_location=None,
     tools="xpan",
     x_axis_type="datetime",
-    x_range=(max_date + timedelta(days=-7),  max_date)
+    x_range=(min_date,  max_date)
 )
 p.yaxis.axis_label = 'Watts'
 
-data = fetch_data()
+data = fetch_data(min_date, max_date)
 source = ColumnDataSource(data=data)
+title = build_title(data)
 
 # Plot stacked lines
 p.line(
@@ -131,7 +132,7 @@ p.line(
 p.legend.location = "top_left"
 p.legend.click_policy = "mute"
 
-select = figure(title="Drag the middle and edges of the selection box to change the range above",
+select = figure(title=title,
                 height=200, width=1000,
                 x_axis_type="datetime",
                 tools="", toolbar_location=None)
@@ -141,6 +142,40 @@ range_tool = RangeTool(x_range=p.x_range)
 select.line('times', 'gain', source=source)
 select.ygrid.grid_line_color = None
 select.add_tools(range_tool)
+
+
+def update_range(attr, old, new):
+    startDate, endDate = new
+    update_plot(
+        datetime.strptime(startDate, '%Y-%m-%d'),
+        datetime.strptime(endDate, '%Y-%m-%d')
+    )
+
+
+date_range_picker.on_change("value", update_range)
+
+
+def update_toggle(attr, old, new):
+    startDate, endDate = date_range_picker.value
+    update_plot(
+        datetime.strptime(startDate, '%Y-%m-%d'),
+        datetime.strptime(endDate, '%Y-%m-%d')
+    )
+
+
+toggle_grouped_by_day.on_change("active", update_toggle)
+
+
+def update_range(attr, old, new):
+    start = new["times"][0]
+    end = new["times"][len(new["times"]) - 1]
+    range_tool.x_range.start = start
+    range_tool.x_range.end = end
+    title = build_title(new)
+    select.title.text = title
+
+
+source.on_change('data', update_range)
 
 
 curdoc().add_root(
