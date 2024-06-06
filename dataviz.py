@@ -64,7 +64,7 @@ def fetch_data(startDateIncluded, endDateIncluded):
     times = [
         datetime.strptime(t, '%Y-%m-%d %H:%M:%S') for (t, _) in consumption_data
     ]
-    consumption = [value for (_, value) in consumption_data]
+    consumption = [value / 1000 for (_, value) in consumption_data]
 
     if grouped_by_day:
         production_query = f"""
@@ -83,7 +83,7 @@ def fetch_data(startDateIncluded, endDateIncluded):
         """
     res_production = cur.execute(production_query)
     production_data = res_production.fetchall()
-    production = [value for (_, value) in production_data]
+    production = [value / 1000 for (_, value) in production_data]
 
     gain = [(p - c) for c, p in zip(consumption, production)]
 
@@ -96,7 +96,12 @@ def fetch_data(startDateIncluded, endDateIncluded):
 
 
 def build_title(data):
-    return f'total production {sum(data["production"]) / 1000}, consumption {sum(data["consumption"]) / 1000}, gain {sum(data["gain"]) / 1000} (in kWs) during the period'
+    grouped_by_day = toggle_grouped_by_day.active
+
+    if grouped_by_day:
+        return f'total gain {sum(data["gain"])} kWh {sum(data["gain"]) * 0.25} € during the period'
+    else:
+        return f'total gail {sum(data["gain"]) / 2} kWh {sum(data["gain"]) / 2 * 0.25} € during the period'
 
 
 def update_plot(startDateIncluded, endDateIncluded):
@@ -112,7 +117,7 @@ p = figure(
     x_axis_type="datetime",
     x_range=(min_date,  max_date)
 )
-p.yaxis.axis_label = 'Watts'
+p.yaxis.axis_label = 'kWh'
 
 data = fetch_data(min_date, max_date)
 source = ColumnDataSource(data=data)
