@@ -27,6 +27,8 @@ if start == (datetime.today() + timedelta(days=-1)).strftime("%Y-%m-%d"):
     print("Previous day already retrieved. Nothing to do.")
     exit()
 
+print(f"retrieving data between {start} and {end}")
+
 config = {
     "production": {
         "identifier": "14232127138183",
