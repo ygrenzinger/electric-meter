@@ -57,7 +57,12 @@ def retrieve_and_insert_data(type):
     measures = [(measure["date"], measure["value"])
                 for measure in data["meter_reading"]["interval_reading"]]
 
-    cur.executemany(f"INSERT INTO {type} VALUES(?, ?)", measures)
+    for measure in measures:
+        try:
+            cur.execute(f"INSERT INTO {type} VALUES(?, ?)", measure)
+        except Exception as e:
+            # adding try catch to manage winter time change
+            print(f"could not insert {measure} due to:", e)
     con.commit()
 
 
